@@ -9,43 +9,40 @@ import type {
 } from '@/types';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
+// Each statement is executed individually — DO SQLite exec() is single-statement.
 
-const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS nodes (
+const SCHEMA_STMTS = [
+  `CREATE TABLE IF NOT EXISTS nodes (
     id         TEXT PRIMARY KEY,
     label      TEXT NOT NULL DEFAULT '',
     properties TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS edges (
+  )`,
+  `CREATE TABLE IF NOT EXISTS edges (
     id         TEXT PRIMARY KEY,
-    from_id    TEXT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
-    to_id      TEXT NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
+    from_id    TEXT NOT NULL,
+    to_id      TEXT NOT NULL,
     type       TEXT NOT NULL DEFAULT '',
     properties TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  -- Adjacency index: index-free neighbour lookup per node
-  -- Each edge produces two rows: one 'out' from from_id, one 'in' from to_id
-  CREATE TABLE IF NOT EXISTS adjacency (
+  )`,
+  // Adjacency index: index-free neighbour lookup — two rows per edge (in + out)
+  `CREATE TABLE IF NOT EXISTS adjacency (
     node_id      TEXT NOT NULL,
     neighbour_id TEXT NOT NULL,
     edge_id      TEXT NOT NULL,
     direction    TEXT NOT NULL,
     edge_type    TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (node_id, edge_id, direction)
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_adj_node        ON adjacency(node_id);
-  CREATE INDEX IF NOT EXISTS idx_adj_node_dir    ON adjacency(node_id, direction);
-  CREATE INDEX IF NOT EXISTS idx_adj_node_type   ON adjacency(node_id, direction, edge_type);
-  CREATE INDEX IF NOT EXISTS idx_edges_from      ON edges(from_id);
-  CREATE INDEX IF NOT EXISTS idx_edges_to        ON edges(to_id);
-  CREATE INDEX IF NOT EXISTS idx_nodes_label     ON nodes(label);
-`;
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_adj_node      ON adjacency(node_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_adj_node_dir  ON adjacency(node_id, direction)`,
+  `CREATE INDEX IF NOT EXISTS idx_adj_node_type ON adjacency(node_id, direction, edge_type)`,
+  `CREATE INDEX IF NOT EXISTS idx_edges_from    ON edges(from_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_edges_to      ON edges(to_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_nodes_label   ON nodes(label)`,
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -88,8 +85,12 @@ export class GraphDO extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
-    // Init schema synchronously — DO SQLite exec is synchronous
-    this.sql.exec(SCHEMA);
+    // blockConcurrencyWhile defers requests until schema is ready
+    ctx.blockConcurrencyWhile(async () => {
+      for (const stmt of SCHEMA_STMTS) {
+        this.sql.exec(stmt);
+      }
+    });
   }
 
   // ── HTTP dispatch ──────────────────────────────────────────────────────────
@@ -192,9 +193,9 @@ export class GraphDO extends DurableObject<Env> {
   }
 
   private deleteNode(id: string): Response {
-    // Cascade via FK handles edges + adjacency cleanup — but adjacency has no FK,
-    // so we clean it manually first
+    // SQLite FK cascade is off by default — delete dependents explicitly
     this.sql.exec('DELETE FROM adjacency WHERE node_id = ? OR neighbour_id = ?', id, id);
+    this.sql.exec('DELETE FROM edges WHERE from_id = ? OR to_id = ?', id, id);
     this.sql.exec('DELETE FROM nodes WHERE id = ?', id);
     return ok({ deleted: id });
   }
