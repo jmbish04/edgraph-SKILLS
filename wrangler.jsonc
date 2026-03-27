@@ -7,16 +7,23 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "GRAPH",
-        "class_name": "GraphDO"
+        "name": "SKILLS_GRAPH",
+        "class_name": "SkillsGraphDO"
       }
     ]
   },
 
+  "r2_buckets": [
+    {
+      "binding": "SKILLS_BUCKET",
+      "bucket_name": "skills-bucket-dev"
+    }
+  ],
+
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["GraphDO"]
+      "new_sqlite_classes": ["SkillsGraphDO"]
     }
   ]
 }
