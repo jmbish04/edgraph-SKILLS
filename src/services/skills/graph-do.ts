@@ -77,7 +77,7 @@ export class SkillsGraphDO extends DurableObject<Env> {
 
     while (queue.length > 0) {
       const { nodeId: currentId, d } = queue.shift()!;
-      if (d >= 10) continue;
+      if (d >= 10) continue; // TODO: Extract 10 to a constant
       const adj = this.queryAdjacency(currentId, 'out', ['REQUIRES'], 1000);
       for (const a of adj) {
         visitedEdges.add(a.edge_id);
