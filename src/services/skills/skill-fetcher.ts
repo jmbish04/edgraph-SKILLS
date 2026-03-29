@@ -24,7 +24,7 @@ export function parseSkillMarkdown(markdown: string) {
   const match = markdown.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) return { frontmatter: {}, body: markdown };
   const [, yamlString, body] = match;
-  try { return { frontmatter: parse(yamlString), body }; } catch (err) { return { frontmatter: {}, body: markdown }; }
+  try { return { frontmatter: parse(yamlString), body }; } catch (err) { console.error('Failed to parse YAML frontmatter:', err); return { frontmatter: {}, body: markdown }; }
 }
 
 export async function upsertSkillToGraph(env: SkillsEnv, skillId: string, frontmatter: any, markdownBody: string) {
