@@ -93,5 +93,5 @@ export async function decomposeAndUpsertSchemas(env: SkillsEnv) {
         if (!res.ok && res.status === 404) await stub.fetch(new Request(`http://do/nodes`, { method: 'POST', body: JSON.stringify(nodePayload), headers: { 'Content-Type': 'application/json' } }));
       }
     }
-  } catch (err) {}
+  } catch (err) { console.error('Failed to decompose apiSchemas:', err); }
 }

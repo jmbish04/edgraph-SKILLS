@@ -9,8 +9,10 @@ export class AIChatAgent {
     if (toolName === 'load_skill') {
       const res = await load_skill(this.env, args.skillId);
       if (res && res.subgraph) {
-        for (const edge of res.subgraph.edges || []) this.activatedPaths.add(edge.id);
-        for (const node of res.subgraph.nodes || []) this.activatedPaths.add(node.id);
+        const { edges = [], nodes = [] } = res.subgraph;
+        for (const item of [...edges, ...nodes]) {
+          this.activatedPaths.add(item.id);
+        }
       }
       return res;
     } else if (toolName === 'query_resource') {

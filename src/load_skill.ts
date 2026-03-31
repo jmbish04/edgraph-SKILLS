@@ -12,7 +12,9 @@ export async function load_skill(env: SkillsEnv, skillId: string) {
     try {
       const obj = await env.SKILLS_BUCKET.get(r2Key);
       if (obj) return { id: node.id, content: await obj.text() };
-    } catch (e) {}
+    } catch (e) {
+      console.error(`Failed to get R2 object with key ${r2Key}:`, e);
+    }
     return { id: node.id, content: null };
   });
   const skillContents = await Promise.all(fetchPromises);

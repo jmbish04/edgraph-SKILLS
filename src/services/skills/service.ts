@@ -48,8 +48,8 @@ app.openapi(GetIntentsRoute, async (c) => {
 
   const matches = nodes.filter((n: any) => JSON.stringify(n.properties).toLowerCase().includes(q.toLowerCase()) || n.id.toLowerCase().includes(q.toLowerCase()));
 
-  const results = [];
-  for (const n of matches) {
+  // Use Promise.all to fetch dependencies in parallel instead of sequentially (mitigates N+1)
+  const results = await Promise.all(matches.map(async (n: any) => {
     const depReq = new Request(`http://do/skills/${n.id}/dependencies`, { method: 'GET' });
     const depRes = await stub.fetch(depReq);
     let deps = [];
@@ -57,8 +57,8 @@ app.openapi(GetIntentsRoute, async (c) => {
         let depData = await depRes.json() as any;
         deps = depData.dependencies || [];
     }
-    results.push({ skill: n, dependencies: deps });
-  }
+    return { skill: n, dependencies: deps };
+  }));
 
   return c.json({ matches: results }, 200);
 });
