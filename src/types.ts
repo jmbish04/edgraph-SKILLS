@@ -1,11 +1,8 @@
-// ─── Environment ─────────────────────────────────────────────────────────────
-
 export interface Env {
-  GRAPH: DurableObjectNamespace;
+  SKILLS_GRAPH: DurableObjectNamespace;
   EDGRAPH_API_KEY?: string;
+  SKILLS_BUCKET: any;
 }
-
-// ─── Property Graph Model ────────────────────────────────────────────────────
 
 export interface NodeProps {
   id: string;
@@ -24,16 +21,13 @@ export interface EdgeProps {
   createdAt: string;
 }
 
-// ─── Internal DB row shapes ──────────────────────────────────────────────────
-// Index signature required for compatibility with DO SqlStorage exec<T> constraint.
-
 export interface NodeRow {
   id: string;
   label: string;
   properties: string; // JSON string
   created_at: string;
   updated_at: string;
-  [key: string]: SqlStorageValue;
+  [key: string]: any;
 }
 
 export interface EdgeRow {
@@ -43,7 +37,7 @@ export interface EdgeRow {
   type: string;
   properties: string; // JSON string
   created_at: string;
-  [key: string]: SqlStorageValue;
+  [key: string]: any;
 }
 
 export interface AdjacencyRow {
@@ -51,10 +45,8 @@ export interface AdjacencyRow {
   edge_id: string;
   edge_type: string;
   direction: string; // 'in' | 'out' — loosened for index signature compat
-  [key: string]: SqlStorageValue;
+  [key: string]: any;
 }
-
-// ─── API Request Bodies ──────────────────────────────────────────────────────
 
 export interface CreateNodeBody {
   id?: string;
@@ -105,8 +97,6 @@ export interface SubgraphBody {
   edgeTypes?: string[];
   nodeLabels?: string[];
 }
-
-// ─── API Response shapes ─────────────────────────────────────────────────────
 
 export interface TraversalNode {
   node: NodeProps;

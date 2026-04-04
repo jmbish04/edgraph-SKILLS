@@ -1,40 +1,13 @@
 import { env, SELF } from 'cloudflare:test';
 import { describe, it, expect, beforeEach } from 'vitest';
-
-// We use a unique graph ID per test run to keep tests isolated
 const G = `test-${Date.now()}`;
 const BASE = `/graphs/${G}`;
 const KEY = 'test-key';
 
-// Helper: auth'd POST
-async function post(path: string, body: unknown) {
-  return SELF.fetch(`http://localhost${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}` },
-    body: JSON.stringify(body),
-  });
-}
-
-async function put(path: string, body: unknown) {
-  return SELF.fetch(`http://localhost${path}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}` },
-    body: JSON.stringify(body),
-  });
-}
-
-async function del(path: string) {
-  return SELF.fetch(`http://localhost${path}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${KEY}` },
-  });
-}
-
-async function get(path: string) {
-  return SELF.fetch(`http://localhost${path}`);
-}
-
-// ─── Node CRUD ────────────────────────────────────────────────────────────────
+async function post(path: string, body: unknown) { return SELF.fetch(`http://localhost${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}` }, body: JSON.stringify(body) }); }
+async function put(path: string, body: unknown) { return SELF.fetch(`http://localhost${path}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}` }, body: JSON.stringify(body) }); }
+async function del(path: string) { return SELF.fetch(`http://localhost${path}`, { method: 'DELETE', headers: { Authorization: `Bearer ${KEY}` } }); }
+async function get(path: string) { return SELF.fetch(`http://localhost${path}`); }
 
 describe('nodes', () => {
   it('creates and retrieves a node', async () => {
@@ -102,8 +75,6 @@ describe('nodes', () => {
   });
 });
 
-// ─── Edge CRUD ────────────────────────────────────────────────────────────────
-
 describe('edges', () => {
   it('creates an edge between existing nodes', async () => {
     await post(`${BASE}/nodes`, { id: 'e-a', label: 'X' });
@@ -138,10 +109,7 @@ describe('edges', () => {
   });
 });
 
-// ─── Traversal ────────────────────────────────────────────────────────────────
-
 describe('traverse', () => {
-  // Build a small chain: A -> B -> C -> D
   async function buildChain() {
     const prefix = `tc-${Date.now()}`;
     await post(`${BASE}/nodes`, { id: `${prefix}-a`, label: 'Node', properties: { name: 'A' } });
@@ -204,8 +172,6 @@ describe('traverse', () => {
   });
 });
 
-// ─── Shortest path ────────────────────────────────────────────────────────────
-
 describe('paths', () => {
   it('finds shortest path between two nodes', async () => {
     const p = `sp-${Date.now()}`;
@@ -233,8 +199,6 @@ describe('paths', () => {
   });
 });
 
-// ─── Stats ────────────────────────────────────────────────────────────────────
-
 describe('stats', () => {
   it('returns node and edge counts', async () => {
     const res = await get(`${BASE}/stats`);
@@ -244,8 +208,6 @@ describe('stats', () => {
     expect(typeof body.edgeCount).toBe('number');
   });
 });
-
-// ─── Auth ─────────────────────────────────────────────────────────────────────
 
 describe('auth', () => {
   it('rejects writes without API key', async () => {
